@@ -9,6 +9,16 @@
       display: flex;
       flex-direction: column; 
     }
+    #controls {
+      position: absolute;
+      top: 10px;
+      right: 10px; 
+      z-index: 10;
+      background: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
     #mapa {
       height: 60%; 
     }
@@ -21,6 +31,15 @@
   <div id="mapa"></div>
   <div id="container"></div>
 
+  <div id="controls">
+
+    <select id="selectData">
+      <option value="EXP">Exportação</option>
+      <option value="IMP">Importação</option>
+      <option value="BAL">Balança Comercial</option>
+    </select>
+  </div>
+
   <script src="https://fastly.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -28,44 +47,18 @@
     const chartMapa = echarts.init(document.getElementById('mapa'));
     const myChart = echarts.init(document.getElementById('container'));
 
-    $.get('world.json', function(worldJson) {
-      echarts.registerMap('world', worldJson);
+    let allData = null;
 
-      function randomPieSeries(center, radius) {
-        const data = ['A', 'B', 'C', 'D'].map((t) => ({
-          value: Math.round(Math.random() * 100),
-          name: 'Categoria ' + t
-        }));
-        return {
-          type: 'pie',
-          coordinateSystem: 'geo',
-          tooltip: { formatter: '{b}: {c} ({d}%)' },
-          label: { show: false },
-          labelLine: { show: false },
-          animationDuration: 0,
-          radius,
-          center,
-          data
-        };
-      }
-
-      const optionMapa = {
-        geo: {
-          map: 'world',
-          roam: true,
-          itemStyle: { areaColor: '#e0f3ff', borderColor: '#999' }
-        },
-        tooltip: {},
-        
-      };
-
-      chartMapa.setOption(optionMapa);
-    });
-
-   
     fetch('BR-exportacoes_importacoes_2025.json')
     .then(res => res.json())
     .then(data => {
+      allData = data;
+      renderLinha(data);
+      renderMapa('EXP');
+    })
+    .catch(console.error);
+
+    function renderLinha(data) {
       const anos = Object.keys(data.BAL).sort(); 
       const exportacoes = anos.map(ano => data.EXP[ano].reduce((sum, item) => sum + item.us_value, 0));
       const importacoes = anos.map(ano => data.IMP[ano].reduce((sum, item) => sum + item.us_value, 0));
@@ -109,10 +102,67 @@
       };
 
       myChart.setOption(optionLinha);
-    })
-    .catch(console.error);
+    }
 
-    // --- RESIZE ---
+    function renderMapa(tipo='EXP') {
+      $.get('world.json', function(worldJson) {
+        echarts.registerMap('world', worldJson);
+
+        const anos = Object.keys(allData[tipo]).sort();
+        const ultimoAno = anos[anos.length-1];
+
+        const mapaData = allData[tipo][ultimoAno].map(item => ({
+          name: item.name,
+          value: item.us_value
+        }));
+
+        const optionMapa = {
+            title: {
+                text: 'Volume de ' + (tipo==='EXP'?'Exportação':tipo==='IMP'?'Importação':'Balança Comercial') + ' do Brasil',
+                subtext: 'Dados do monitor do Comércio Exterior Brasileiro',
+                left: 'center',
+                top: 8,
+                itemGap: 6
+            },
+            tooltip: { trigger: 'item', formatter: '{b}: US$ {c}' },
+            visualMap: {
+                min: Math.min(...mapaData.map(d=>d.value)),
+                max: Math.max(...mapaData.map(d=>d.value)),
+                text: ['Máximo','Mínimo'],
+
+                inRange: { color: ['#cae9db','#62868d'] }
+            },
+            geo: {
+                map: 'world',
+                roam: true,
+                top: 70,
+                bottom: 10,
+                itemStyle: {
+                areaColor: '#e0f3ff',
+                borderColor: '#999'
+                },
+                emphasis: {
+                itemStyle: { areaColor: '#7f91b3' } 
+                }
+            },
+            series: [{
+                type: 'map',
+                map: 'world',
+                geoIndex: 0,  
+                data: mapaData
+            }]
+            };
+
+
+        chartMapa.setOption(optionMapa);
+      });
+    }
+
+    document.getElementById('selectData').addEventListener('change', function() {
+      const tipo = this.value;
+      renderMapa(tipo);
+    });
+
     window.addEventListener('resize', () => {
       chartMapa.resize();
       myChart.resize();
