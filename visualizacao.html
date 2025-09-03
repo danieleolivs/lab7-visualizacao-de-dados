@@ -154,7 +154,30 @@
                     fontWeight: 'bold',
                     fill: '#333'
                 }
-            }],
+            },
+            {
+                type: 'group',
+                right: 10,  
+                bottom: 20,  
+                children: [
+                {
+                    type: 'rect',
+                    shape: { width: 20, height: 20 },
+                    style: { fill: '#f0f0f0', stroke: '#999' }
+                },
+                {
+                    type: 'text',
+                    left: 25,
+                    top: 2,
+                    style: {
+                    text: 'Sem dados',
+                    fontSize: 12,
+                    fill: '#333'
+                    }
+                }
+                ]
+            }
+            ],
             geo: {
                 map: 'world',
                 roam: true,
