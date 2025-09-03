@@ -129,9 +129,32 @@
                 min: Math.min(...mapaData.map(d=>d.value)),
                 max: Math.max(...mapaData.map(d=>d.value)),
                 text: ['Máximo','Mínimo'],
-
-                inRange: { color: ['#cae9db','#62868d'] }
+                orient:'vertical',
+                right:20,
+                top:'middle',
+                textGap:10,
+                itemHeight: 250,
+                itemWidth:30,
+                inRange: { color: ['#cae9db','#62868d'] },
+                outOfRange: {              
+                    color: ['#f0f0f0']     
+                },
+                formatter: (value) => {    
+                    return value >= 1e9 ? (value/1e9).toFixed(1) + ' bi US$' : value;
+                }
             },
+            graphic: [{
+                type: 'text',
+                right: 10,  
+                top: 'middle',
+                rotation: -Math.PI / 2, 
+                style: {
+                    text: 'Total em US$',
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                    fill: '#333'
+                }
+            }],
             geo: {
                 map: 'world',
                 roam: true,
